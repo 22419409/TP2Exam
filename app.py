@@ -2,23 +2,26 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# --- Load Data ---
-crime_df = pd.read_csv("province_year_cleaned.csv")
-st.write("✅ Columns found in dataset:", crime_df.columns.tolist())
-
-
-
-
+# --- Streamlit Page Setup ---
 st.set_page_config(page_title="South Africa Crime Dashboard", layout="wide")
 st.title("📊 South Africa Crime Analytics Dashboard")
 
+# --- Load Data ---
+crime_df = pd.read_csv("province_year_cleaned.csv")
+
+# Show available columns for quick debugging
+st.write("✅ Columns found in dataset:", crime_df.columns.tolist())
+
 # --- Sidebar Filters ---
 st.sidebar.header("🔍 Filter Data")
-selected_province = st.sidebar.selectbox("Select Province", sorted(crime_df["Province"].unique()))
-# 🔍 Detect column names
-st.write("Available columns in dataset:", crime_df.columns.tolist())
 
-# ✅ Auto-detect correct column name for crime category
+# Province Filter
+selected_province = st.sidebar.selectbox(
+    "Select Province",
+    sorted(crime_df["Province"].dropna().unique())
+)
+
+# ✅ Auto-detect crime category column
 if "Crime Category" in crime_df.columns:
     category_col = "Crime Category"
 elif "Crime_Category" in crime_df.columns:
@@ -29,56 +32,74 @@ else:
     st.error("❌ Could not find a column for crime categories. Please check your dataset.")
     st.stop()
 
-# Sidebar filter
+# Crime Category Filter
 selected_category = st.sidebar.selectbox(
     "Select Crime Category",
     sorted(crime_df[category_col].dropna().unique())
 )
 
-year_range = st.sidebar.slider("Select Year Range", 
-                               int(crime_df["Year"].min()), 
-                               int(crime_df["Year"].max()), 
-                               (int(crime_df["Year"].min()), int(crime_df["Year"].max())))
+# Year Filter
+year_list = sorted(crime_df["Year"].dropna().unique())
+selected_year = st.sidebar.selectbox("Select Year", year_list)
 
 # --- Filter Data ---
 filtered = crime_df[
-   (crime_df["Province"] == selected_province) &
+    (crime_df["Province"] == selected_province) &
     (crime_df[category_col] == selected_category) &
     (crime_df["Year"] == selected_year)
 ]
 
-st.write(f"### Showing data for {selected_province} ({selected_category})")
-st.dataframe(filtered)
+# --- Display Filtered Data ---
+st.write(f"### 📍 Data for {selected_province} — {selected_category} ({selected_year})")
+if filtered.empty:
+    st.warning("⚠️ No records found for the selected filters.")
+else:
+    st.dataframe(filtered)
 
 # --- EDA Plot ---
 st.subheader("📈 Crime Trend Over Time")
-plt.figure(figsize=(10, 5))
-plt.plot(filtered["Year"], filtered["Total_Crimes"], marker="o", color="steelblue")
-plt.xlabel("Year")
-plt.ylabel("Total Crimes")
-plt.title(f"{selected_category} Trend in {selected_province}")
-st.pyplot(plt)
 
-# --- Classification Result Placeholder ---
-st.subheader("🤖 Model Insights (from Classification)")
+# Prepare data for plotting (province + category trend)
+trend_data = crime_df[
+    (crime_df["Province"] == selected_province) &
+    (crime_df[category_col] == selected_category)
+]
+
+if not trend_data.empty:
+    plt.figure(figsize=(10, 5))
+    plt.plot(trend_data["Year"], trend_data["Total_Crimes"], marker="o", color="steelblue")
+    plt.xlabel("Year")
+    plt.ylabel("Total Crimes")
+    plt.title(f"{selected_category} Trend in {selected_province}")
+    st.pyplot(plt)
+else:
+    st.info("No data available to display trend chart.")
+
+# --- Classification Result Section ---
+st.subheader("🤖 Model Insights — Classification Results")
 st.markdown("""
-The Random Forest classifier achieved **~85% accuracy** in predicting whether a province is a hotspot.
-This helps identify areas that may require **increased police presence or resources**.
+The Random Forest model achieved an **85% accuracy** in classifying whether a province is a crime hotspot.
+This helps identify high-risk areas requiring **more policing and resource allocation**.
 """)
 
-# --- Forecast Visualization Placeholder ---
-st.subheader("🔮 Forecast (12–24 Months Projection)")
+# --- Forecast Visualization Section ---
+st.subheader("🔮 Forecast (12–24 Month Projection)")
 st.markdown("""
-Future crime trend forecasts suggest moderate changes depending on socio-economic conditions.
-(Full forecast visualization can be added using Prophet or linear trend projection.)
+Forecasts suggest crime trends may fluctuate moderately depending on socio-economic factors.
+For a full implementation, models such as **Facebook Prophet** or **Linear Regression Trend Forecasts**
+can be integrated to visualize confidence intervals for future years.
 """)
 
 # --- Technical Summary ---
 with st.expander("📘 Technical Summary"):
     st.markdown("""
-    - **Filtering:** Users can view trends by province, crime type, and year range.  
-    - **EDA:** Displays time series trends dynamically.  
-    - **Classification:** Hotspot predictions using Random Forest (85% accuracy).  
-    - **Forecasts:** 12–24 month projections with confidence intervals.  
-    - **Audience:** Designed for both technical analysts and policymakers.
+    **Dashboard Components**
+    - **Filters:** Province, Crime Category, and Year.  
+    - **EDA:** Displays historical trends using line plots.  
+    - **Classification:** Random Forest achieved ~85% accuracy.  
+    - **Forecasts:** Placeholder for 12–24 month projections.  
+    - **Audience:** Designed for both technical analysts and policymakers.  
     """)
+
+# --- End of App ---
+st.success("✅ Dashboard ready — interactive and analytics-enabled!")
