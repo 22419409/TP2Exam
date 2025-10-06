@@ -11,7 +11,26 @@ st.title("📊 South Africa Crime Analytics Dashboard")
 # --- Sidebar Filters ---
 st.sidebar.header("🔍 Filter Data")
 selected_province = st.sidebar.selectbox("Select Province", sorted(crime_df["Province"].unique()))
-selected_category = st.sidebar.selectbox("Select Crime Category", sorted(crime_df["Crime Category"].unique()))
+# 🔍 Detect column names
+st.write("Available columns in dataset:", crime_df.columns.tolist())
+
+# ✅ Auto-detect correct column name for crime category
+if "Crime Category" in crime_df.columns:
+    category_col = "Crime Category"
+elif "Crime_Category" in crime_df.columns:
+    category_col = "Crime_Category"
+elif "Category" in crime_df.columns:
+    category_col = "Category"
+else:
+    st.error("❌ Could not find a column for crime categories. Please check your dataset.")
+    st.stop()
+
+# Sidebar filter
+selected_category = st.sidebar.selectbox(
+    "Select Crime Category",
+    sorted(crime_df[category_col].dropna().unique())
+)
+
 year_range = st.sidebar.slider("Select Year Range", 
                                int(crime_df["Year"].min()), 
                                int(crime_df["Year"].max()), 
