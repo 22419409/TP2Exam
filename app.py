@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 
 # --- Load Data ---
 crime_df = pd.read_csv("province_year_cleaned.csv")
+st.write("✅ Columns found in dataset:", crime_df.columns.tolist())
+
+
+
 
 st.set_page_config(page_title="South Africa Crime Dashboard", layout="wide")
 st.title("📊 South Africa Crime Analytics Dashboard")
@@ -38,9 +42,9 @@ year_range = st.sidebar.slider("Select Year Range",
 
 # --- Filter Data ---
 filtered = crime_df[
-    (crime_df["Province"] == selected_province) &
-    (crime_df["Crime Category"] == selected_category) &
-    (crime_df["Year"].between(year_range[0], year_range[1]))
+   (crime_df["Province"] == selected_province) &
+    (crime_df[category_col] == selected_category) &
+    (crime_df["Year"] == selected_year)
 ]
 
 st.write(f"### Showing data for {selected_province} ({selected_category})")
